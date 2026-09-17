@@ -1,0 +1,103 @@
+name: monarch
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: monarch
+      POSTGRES_USER: monarch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-monarch-local-only}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monarch -d monarch"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - backend
+
+  api:
+    build:
+      context: ./api
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgresql+asyncpg://monarch:${POSTGRES_PASSWORD:-monarch-local-only}@db:5432/monarch
+      CORS_ORIGINS: '["http://127.0.0.1:3000","http://localhost:3000"]'
+      UPLOAD_DIR: /data/quote_uploads
+      QUOTE_RETENTION_HOURS: ${QUOTE_RETENTION_HOURS:-168}
+      QUOTE_CLEANUP_INTERVAL_SECONDS: ${QUOTE_CLEANUP_INTERVAL_SECONDS:-3600}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL:-}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+    volumes:
+      - quote_uploads:/data/quote_uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - frontend
+      - backend
+
+  web:
+    build:
+      context: ./web
+    restart: unless-stopped
+    environment:
+      NUXT_PUBLIC_API_BASE: ""
+      NUXT_PUBLIC_SHOW_PORTFOLIO: ${NUXT_PUBLIC_SHOW_PORTFOLIO:-false}
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - frontend
+
+  nginx:
+    image: nginx:1.29-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:80"
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      web:
+        condition: service_started
+      api:
+        condition: service_healthy
+    networks:
+      - frontend
+      - backend
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-not-configured}
+    depends_on:
+      nginx:
+        condition: service_started
+    networks:
+      - frontend
+
+  cloudflared-quick:
+    image: cloudflare/cloudflared:latest
+    restart: "no"
+    profiles: ["quick-tunnel"]
+    command: tunnel --no-autoupdate --url http://nginx:80
+    depends_on:
+      nginx:
+        condition: service_started
+    networks:
+      - frontend
+
+volumes:
+  postgres_data:
+  quote_uploads:
+
+networks:
+  frontend:
+  backend:
+    internal: true

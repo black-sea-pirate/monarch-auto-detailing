@@ -1,0 +1,39 @@
+# Local source material and generated working files
+/.work/
+/tmp/
+/image_tools/
+/content/
+/brand/
+/stitch-export/
+/IMG_*
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Frontend
+node_modules/
+.nuxt/
+.output/
+.data/
+.nitro/
+dist/
+
+# Backend
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+api/.data/
+api/.env
+web/.env
+
+# Editor and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="24" viewBox="0 0 16 24" fill="none">
+  <defs>
+    <linearGradient id="thread" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#d2bc95" stop-opacity=".74"/>
+      <stop offset=".46" stop-color="#b9a17a" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#766248" stop-opacity=".7"/>
+    </linearGradient>
+    <path id="stitch" d="M4 6Q7.5 4.65 11 4"/>
+    <g id="thread-row">
+      <!-- Small needle recesses and an offset shadow seat the thread in the panel. -->
+      <g fill="#010503" fill-opacity=".68">
+        <ellipse cx="3.9" cy="6.1" rx="1.25" ry=".95"/>
+        <ellipse cx="11.1" cy="4.1" rx="1.25" ry=".95"/>
+      </g>
+      <use href="#stitch" transform="translate(0 .75)" stroke="#010503" stroke-opacity=".72" stroke-width="2.5" stroke-linecap="round"/>
+      <use href="#stitch" stroke="url(#thread)" stroke-width="1.65" stroke-linecap="round"/>
+      <path d="M4.7 5.55Q7.4 4.55 10.2 4.05" stroke="#e1ceab" stroke-opacity=".2" stroke-width=".4" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <use href="#thread-row"/>
+  <use href="#thread-row" transform="translate(0 14)"/>
+</svg>

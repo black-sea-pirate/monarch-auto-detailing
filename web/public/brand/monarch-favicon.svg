@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="358 172 540 546" role="img" aria-labelledby="title">
+  <title id="title">Monarch</title>
+  <rect x="358" y="172" width="540" height="546" rx="104" fill="#07110e" />
+  <g fill="#c59b52">
+    <path d="M374 276 619 576 525 702h-39l82-118-145-178v296h-49Z" />
+    <path d="M374 276 619 576 525 702h-39l82-118-145-178v296h-49Z" transform="translate(1256) scale(-1 1)" />
+    <path d="m628 188 38 209-38 37-38-37Zm-188 107 188 168 188-168-188 244Z" />
+    <path d="M628 605c6 35.88 9.6 39.56 40 46-30.4 6.44-34 10.12-40 46-6-35.88-9.6-39.56-40-46 30.4-6.44 34-10.12 40-46Z" />
+  </g>
+</svg>

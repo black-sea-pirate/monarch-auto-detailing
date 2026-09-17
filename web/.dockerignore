@@ -1,0 +1,6 @@
+.env
+node_modules
+.nuxt
+.output
+dist
+npm-debug.log*
