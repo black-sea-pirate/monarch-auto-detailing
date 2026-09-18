@@ -29,7 +29,7 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 fi
 
 previous_commit="$(git rev-parse HEAD)"
-git fetch --prune origin production:refs/remotes/origin/production
+git fetch origin production:refs/remotes/origin/production
 target_commit="$(git rev-parse "${DEPLOY_REF}")"
 
 if [[ "${previous_commit}" == "${target_commit}" ]]; then
