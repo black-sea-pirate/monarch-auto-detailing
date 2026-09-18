@@ -100,6 +100,38 @@ docker compose --profile tunnel up -d
 The same profile can be used later on an Ubuntu VPS. HTTPS terminates at Cloudflare;
 no public API or database port is required.
 
+## Production deployment
+
+Production runs from `/opt/monarch` on Ubuntu with Docker Compose. The local
+`.env` file is copied to that directory separately, remains ignored by Git, and
+must have permissions `600`.
+
+Every push to `main` is checked by GitHub Actions. Only after the API tests,
+Python lint, frontend type-check, and frontend production build succeed is the
+same commit fast-forwarded to the `production` branch. The Lightsail server
+checks that branch every five minutes.
+
+Install the poller on the server after the repository and `.env` exist:
+
+```bash
+sudo install -m 0755 infra/deploy/monarch-deploy.sh /usr/local/sbin/monarch-deploy
+sudo install -m 0644 infra/systemd/monarch-deploy.service /etc/systemd/system/
+sudo install -m 0644 infra/systemd/monarch-deploy.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now monarch-deploy.timer
+```
+
+Inspect deployment status with:
+
+```bash
+systemctl status monarch-deploy.timer
+journalctl -u monarch-deploy.service -n 100 --no-pager
+```
+
+The deployer builds in place, preserves the PostgreSQL and upload volumes,
+checks `/api/v1/ready`, and rebuilds the previous commit if the new version
+does not become healthy.
+
 ## Direct development without Docker
 
 Frontend:
