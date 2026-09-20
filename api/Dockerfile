@@ -10,6 +10,8 @@ RUN addgroup --system monarch && adduser --system --ingroup monarch monarch
 
 COPY pyproject.toml ./
 COPY app ./app
+COPY alembic.ini ./alembic.ini
+COPY alembic ./alembic
 RUN python -m pip install --no-cache-dir .
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh

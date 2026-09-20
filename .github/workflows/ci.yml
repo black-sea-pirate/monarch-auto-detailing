@@ -18,6 +18,26 @@ jobs:
   api:
     name: API checks
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql+asyncpg://monarch:ci-only-password@127.0.0.1:5432/monarch
+      RUN_DB_TESTS: "1"
+      APP_ENV: development
+      ADMIN_DEV_TOKEN: ci-admin-token
+      ADMIN_ALLOWED_EMAILS: '["owner@example.com"]'
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: monarch
+          POSTGRES_USER: monarch
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U monarch -d monarch"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     defaults:
       run:
         working-directory: api
@@ -37,6 +57,9 @@ jobs:
 
       - name: Lint API
         run: python -m ruff check .
+
+      - name: Apply database migrations
+        run: python -m app.migrate
 
       - name: Test API
         run: python -m pytest

@@ -14,7 +14,7 @@ from app.services.telegram import build_quote_summary
 
 def test_upload_count_limits() -> None:
     validate_upload_counts(MAX_PHOTOS, 2)
-    with pytest.raises(UploadValidationError, match="up to 15 photos"):
+    with pytest.raises(UploadValidationError, match=f"up to {MAX_PHOTOS} photos"):
         validate_upload_counts(MAX_PHOTOS + 1, 0)
     with pytest.raises(UploadValidationError, match="up to 2 videos"):
         validate_upload_counts(0, 3)
@@ -32,19 +32,24 @@ def test_upload_signatures_are_detected_from_content() -> None:
     ) == ("video/mp4", ".mp4")
 
 
-def test_telegram_summary_escapes_customer_input() -> None:
+def test_telegram_summary_excludes_direct_customer_identifiers() -> None:
     quote = QuoteRequest(
         id=uuid.UUID("12345678-1234-5678-1234-567812345678"),
         name="Alex <Admin>",
         contact="Telegram: @alex&co",
-        vehicle="SUV",
-        community="Royal Oak",
+        vehicle="SUV <script>",
+        community="Royal Oak & Tuscany",
         concern="Leather & carpet",
+        requested_services=["Leather & Care"],
         source="website",
     )
 
     summary = build_quote_summary(quote)
 
     assert "#12345678" in summary
-    assert "Alex &lt;Admin&gt;" in summary
-    assert "@alex&amp;co" in summary
+    assert "SUV &lt;script&gt;" in summary
+    assert "Royal Oak &amp; Tuscany" in summary
+    assert "Leather &amp; Care" in summary
+    assert "Alex" not in summary
+    assert "@alex" not in summary
+    assert "Leather &amp; carpet" not in summary

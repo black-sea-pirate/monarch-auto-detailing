@@ -1,14 +1,16 @@
 import uuid
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
+from io import BytesIO
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from app.config import settings
 from app.db import get_session
 from app.main import app
-from app.models import QuoteRequest, QuoteRequestUpload
+from app.models import QuoteRequest, QuoteRequestDelivery, QuoteRequestUpload
 
 
 class FakeSession:
@@ -21,6 +23,8 @@ class FakeSession:
             self.quote = obj
         elif isinstance(obj, QuoteRequestUpload):
             self.uploads.append(obj)
+        elif isinstance(obj, QuoteRequestDelivery):
+            pass
 
     async def get(self, model: type, _: object, **__: object) -> object | None:
         if model is QuoteRequest:
@@ -40,7 +44,7 @@ class FakeSession:
             obj.id = uuid.uuid4()
 
 
-def test_quote_stages_original_photo_then_submits(tmp_path: Path) -> None:
+def test_quote_stages_private_photo_then_submits(tmp_path: Path) -> None:
     fake_session = FakeSession()
 
     async def override_session() -> AsyncIterator[FakeSession]:
@@ -52,12 +56,17 @@ def test_quote_stages_original_photo_then_submits(tmp_path: Path) -> None:
     try:
         payload = {
             "name": "Alex Driver",
-            "contact": "Telegram: @alex",
+            "contact": "@alex",
+            "contact_method": "telegram",
             "vehicle": "SUV / Crossover",
             "community": "Royal Oak",
-            "concern": "Requested services: Maintenance Interior Clean",
+            "concern": "Please check the rear seats.",
+            "requested_services": ["Maintenance Interior Clean"],
             "source": "website",
         }
+        source = BytesIO()
+        Image.new("RGB", (64, 48), "red").save(source, format="JPEG", exif=b"private-metadata")
+        source_bytes = source.getvalue()
         with TestClient(app) as client:
             draft_response = client.post("/api/v1/quote-requests", json=payload)
             assert draft_response.status_code == 201
@@ -67,7 +76,7 @@ def test_quote_stages_original_photo_then_submits(tmp_path: Path) -> None:
             upload_response = client.post(
                 f"/api/v1/quote-requests/{draft['id']}/uploads",
                 data={"kind": "photo"},
-                files={"upload": ("interior.jpg", b"\xff\xd8\xff" + bytes(128), "image/jpeg")},
+                files={"upload": ("interior.jpg", source_bytes, "image/jpeg")},
                 headers={"X-Upload-Token": draft["upload_token"]},
             )
             assert upload_response.status_code == 201
@@ -79,11 +88,13 @@ def test_quote_stages_original_photo_then_submits(tmp_path: Path) -> None:
             )
 
         assert submit_response.status_code == 200
-        assert submit_response.json()["status"] == "stored"
+        assert submit_response.json()["status"] == "new"
         assert len(fake_session.uploads) == 1
         stored_path = tmp_path / fake_session.uploads[0].stored_name
         assert stored_path.is_file()
-        assert stored_path.read_bytes() == b"\xff\xd8\xff" + bytes(128)
+        with Image.open(stored_path) as stored_image:
+            assert stored_image.format == "JPEG"
+            assert stored_image.getexif() == {}
     finally:
         app.dependency_overrides.clear()
         settings.upload_dir = original_upload_dir

@@ -5,14 +5,20 @@ from pathlib import Path
 
 import anyio
 from fastapi import UploadFile
+from PIL import Image, ImageOps, UnidentifiedImageError
+from pillow_heif import register_heif_opener
 
 from app.config import settings
 
-MAX_PHOTOS = 15
+register_heif_opener()
+Image.MAX_IMAGE_PIXELS = 50_000_000
+
+MAX_PHOTOS = 10
 MAX_VIDEOS = 2
-MAX_PHOTO_BYTES = 50 * 1024 * 1024
+MAX_PHOTO_BYTES = 12 * 1024 * 1024
 MAX_VIDEO_BYTES = 50 * 1024 * 1024
-MAX_REQUEST_BYTES = 500 * 1024 * 1024
+MAX_REQUEST_BYTES = 150 * 1024 * 1024
+MAX_IMAGE_DIMENSION = 2560
 CHUNK_SIZE = 1024 * 1024
 
 
@@ -92,6 +98,35 @@ def resolve_upload_path(stored_name: str) -> Path:
     return candidate
 
 
+def _normalize_photo(source: Path, destination: Path) -> None:
+    try:
+        with Image.open(source) as opened:
+            image = ImageOps.exif_transpose(opened)
+            image.load()
+            image.thumbnail(
+                (MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION),
+                Image.Resampling.LANCZOS,
+            )
+            if image.mode in {"RGBA", "LA"} or (
+                image.mode == "P" and "transparency" in image.info
+            ):
+                rgba = image.convert("RGBA")
+                background = Image.new("RGB", rgba.size, "white")
+                background.paste(rgba, mask=rgba.getchannel("A"))
+                image = background
+            elif image.mode != "RGB":
+                image = image.convert("RGB")
+            image.save(
+                destination,
+                format="JPEG",
+                quality=88,
+                optimize=True,
+                progressive=True,
+            )
+    except (Image.DecompressionBombError, UnidentifiedImageError, OSError) as exc:
+        raise UploadValidationError("The photo could not be safely processed.") from exc
+
+
 async def _store_one(
     quote_id: uuid.UUID,
     upload: UploadFile,
@@ -103,19 +138,26 @@ async def _store_one(
     if not first_chunk:
         raise UploadValidationError(f"{original_name} is empty.")
 
-    content_type, extension = detect_upload_type(
+    detected_type, extension = detect_upload_type(
         kind,
         first_chunk[:32],
         upload.content_type or "application/octet-stream",
     )
     file_limit = MAX_PHOTO_BYTES if kind == "photo" else MAX_VIDEO_BYTES
-    relative_path = Path(str(quote_id)) / f"{uuid.uuid4().hex}{extension}"
+    stored_type = "image/jpeg" if kind == "photo" else detected_type
+    stored_extension = ".jpg" if kind == "photo" else extension
+    relative_path = Path(str(quote_id)) / f"{uuid.uuid4().hex}{stored_extension}"
     destination = resolve_upload_path(relative_path.as_posix())
     destination.parent.mkdir(parents=True, exist_ok=True)
+    write_target = (
+        destination.with_suffix(f"{destination.suffix}.upload")
+        if kind == "photo"
+        else destination
+    )
     size = 0
 
     try:
-        async with await anyio.open_file(destination, "wb") as output:
+        async with await anyio.open_file(write_target, "wb") as output:
             chunk = first_chunk
             while chunk:
                 size += len(chunk)
@@ -130,7 +172,12 @@ async def _store_one(
                     )
                 await output.write(chunk)
                 chunk = await upload.read(CHUNK_SIZE)
+        if kind == "photo":
+            await anyio.to_thread.run_sync(_normalize_photo, write_target, destination)
+            write_target.unlink(missing_ok=True)
+            size = destination.stat().st_size
     except Exception:
+        write_target.unlink(missing_ok=True)
         destination.unlink(missing_ok=True)
         raise
 
@@ -138,7 +185,7 @@ async def _store_one(
         kind=kind,
         original_name=original_name,
         stored_name=relative_path.as_posix(),
-        content_type=content_type,
+        content_type=stored_type,
         size_bytes=size,
     )
 

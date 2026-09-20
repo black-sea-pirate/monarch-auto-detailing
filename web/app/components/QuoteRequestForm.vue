@@ -12,6 +12,11 @@ type QuoteDraft = {
   upload_token: string
 }
 
+type SubmittedQuote = {
+  id: string
+  status: string
+}
+
 type ContactMethod = 'whatsapp' | 'messenger' | 'telegram' | 'viber' | 'sms' | 'email'
 
 type ContactMethodOption = {
@@ -45,11 +50,11 @@ const concernDetails = ref('')
 const photoFiles = ref<File[]>([])
 const videoFiles = ref<File[]>([])
 
-const MAX_PHOTOS = 15
+const MAX_PHOTOS = 10
 const MAX_VIDEOS = 2
-const MAX_PHOTO_BYTES = 50 * 1024 * 1024
+const MAX_PHOTO_BYTES = 12 * 1024 * 1024
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024
-const MAX_TOTAL_BYTES = 500 * 1024 * 1024
+const MAX_TOTAL_BYTES = 150 * 1024 * 1024
 
 const contactMethods: ContactMethodOption[] = [
   {
@@ -223,7 +228,14 @@ async function createQuoteDraft(): Promise<QuoteDraft> {
   const response = await fetch(apiUrl('/api/v1/quote-requests'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...form, source: props.source }),
+    body: JSON.stringify({
+      ...form,
+      contact: contactValue.value.trim(),
+      contact_method: contactMethod.value,
+      concern: concernDetails.value.trim(),
+      requested_services: selectedNeeds.value,
+      source: props.source,
+    }),
   })
   if (!response.ok) {
     throw new Error(await readApiError(response, 'The request could not be started.'))
@@ -270,7 +282,7 @@ function uploadQuoteFile(
   })
 }
 
-async function finalizeQuoteDraft(draft: QuoteDraft) {
+async function finalizeQuoteDraft(draft: QuoteDraft): Promise<SubmittedQuote> {
   const response = await fetch(apiUrl(`/api/v1/quote-requests/${draft.id}/submit`), {
     method: 'POST',
     headers: { 'X-Upload-Token': draft.upload_token },
@@ -278,6 +290,7 @@ async function finalizeQuoteDraft(draft: QuoteDraft) {
   if (!response.ok) {
     throw new Error(await readApiError(response, 'The request could not be submitted.'))
   }
+  return await response.json() as SubmittedQuote
 }
 
 async function submitQuote() {
@@ -292,12 +305,6 @@ async function submitQuote() {
 
   submitting.value = true
   uploadProgress.value = 0
-  form.contact = `${activeContactMethod.value.label}: ${contactValue.value.trim()}`
-  form.concern = [
-    selectedNeeds.value.length > 0 ? `Requested services: ${selectedNeeds.value.join(', ')}` : '',
-    concernDetails.value.trim() ? `Details: ${concernDetails.value.trim()}` : '',
-  ].filter(Boolean).join('\n')
-
   try {
     const draft = await createQuoteDraft()
     const uploads = [
@@ -312,10 +319,10 @@ async function submitQuote() {
         ? Math.min(99, Math.round((completedBytes / totalUploadBytes.value) * 100))
         : 0
     }
-    await finalizeQuoteDraft(draft)
+    const submitted = await finalizeQuoteDraft(draft)
     uploadProgress.value = 100
     submitState.value = 'success'
-    submitMessage.value = 'Request received. Your details and attachments are ready for review.'
+    submitMessage.value = `Request #${submitted.id.slice(0, 8).toUpperCase()} received. Your details and attachments are ready for review.`
     Object.assign(form, { name: '', contact: '', vehicle: initialVehicle, community: '', concern: '' })
     contactMethod.value = 'whatsapp'
     contactValue.value = ''
@@ -437,7 +444,7 @@ async function submitQuote() {
             @change="addSelectedFiles($event, 'photo')"
           >
           <span class="media-upload-icon" aria-hidden="true">+</span>
-          <span><strong>Add photos</strong><small>{{ photoFiles.length }} / {{ MAX_PHOTOS }} · original files, max 50 MB each</small></span>
+          <span><strong>Add photos</strong><small>{{ photoFiles.length }} / {{ MAX_PHOTOS }} · max 12 MB each</small></span>
         </label>
         <label class="media-upload-action">
           <input
@@ -454,7 +461,7 @@ async function submitQuote() {
       <div v-if="photoFiles.length || videoFiles.length" class="selected-media">
         <div class="selected-media-summary">
           <span>{{ photoFiles.length }} photo{{ photoFiles.length === 1 ? '' : 's' }} · {{ videoFiles.length }} video{{ videoFiles.length === 1 ? '' : 's' }}</span>
-          <strong>{{ formatBytes(totalUploadBytes) }} / 500 MB</strong>
+          <strong>{{ formatBytes(totalUploadBytes) }} / 150 MB</strong>
         </div>
         <ul>
           <li v-for="(file, index) in photoFiles" :key="`photo-${file.name}-${file.lastModified}`">
@@ -471,7 +478,7 @@ async function submitQuote() {
       </div>
 
       <p class="upload-privacy-note">
-        Files are stored privately and temporarily, then removed after the request is accepted or automatically after 7 days.
+        Photos are resized and stripped of location metadata. Files stay private and are removed 30 days after acceptance, or within 90 days if the request is not actioned.
       </p>
     </fieldset>
 
@@ -480,7 +487,7 @@ async function submitQuote() {
     </button>
 
     <p class="form-consent">
-      By sending, you consent to Monarch using these details and media to prepare your quote. Temporary server copies are deleted after acceptance or within 7 days; the delivered request remains in our private Telegram intake.
+      By sending, you consent to Monarch using these details and media to prepare your quote. Telegram receives only a request number and general service summary; contact details and media remain in our protected intake.
     </p>
 
     <p v-if="submitMessage" class="form-message" :class="`is-${submitState}`" role="status">

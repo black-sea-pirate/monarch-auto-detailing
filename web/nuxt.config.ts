@@ -1,13 +1,16 @@
 export default defineNuxtConfig({
   compatibilityDate: '2026-08-01',
   telemetry: false,
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/admin.css'],
   devtools: { enabled: true },
   runtimeConfig: {
     public: {
       apiBase: '',
       showPortfolio: false,
     },
+  },
+  routeRules: {
+    '/admin/**': { ssr: false },
   },
   app: {
     head: {

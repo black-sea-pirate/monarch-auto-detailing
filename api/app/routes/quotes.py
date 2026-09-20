@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 import uuid
+from datetime import UTC, datetime
 from typing import Annotated, Literal
 
 from fastapi import (
@@ -19,7 +20,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
-from app.models import QuoteRequest, QuoteRequestUpload
+from app.models import QuoteRequest, QuoteRequestDelivery, QuoteRequestUpload
 from app.schemas import (
     QuoteRequestCreate,
     QuoteRequestDraftRead,
@@ -182,8 +183,15 @@ async def submit_quote_request(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> QuoteRequest:
     quote = await _get_locked_quote(session, quote_id, upload_token)
-    quote.status = "stored"
+    quote.status = "new"
     quote.upload_token_hash = ""
+    session.add(
+        QuoteRequestDelivery(
+            quote_id=quote.id,
+            attempts=0,
+            next_attempt_at=datetime.now(UTC),
+        )
+    )
     try:
         await session.commit()
         await session.refresh(quote)

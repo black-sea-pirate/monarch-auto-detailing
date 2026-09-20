@@ -1,8 +1,8 @@
 # Monarch Auto Interior Detailing
 
 Nuxt 4 / Vue 3 website with a FastAPI quote intake, PostgreSQL persistence,
-private temporary uploads, Telegram delivery, Nginx routing, and an optional
-Cloudflare Tunnel.
+private temporary uploads, a protected admin inbox, minimal Telegram notifications,
+Nginx routing, and an optional Cloudflare Tunnel.
 
 ## Local Docker stack
 
@@ -26,7 +26,7 @@ docker compose down --volumes  # also removes the local database and temporary u
 
 Do not use `--volumes` unless losing local test data is intentional.
 
-## Telegram intake
+## Telegram notifications
 
 Never commit or paste the bot token into chat. A local root `.env` has already been
 created and ignored by Git; put the replacement token directly in that file.
@@ -40,35 +40,50 @@ created and ignored by Git; put the replacement token directly in that file.
    ```
 
 3. Copy the numeric id printed by the command into `TELEGRAM_CHAT_ID` in `.env`.
-4. Set a long random `TELEGRAM_WEBHOOK_SECRET` containing only letters, numbers,
-   underscores, and hyphens.
-5. Once a public HTTPS tunnel exists, set its complete callback address:
-
-   ```dotenv
-   TELEGRAM_WEBHOOK_URL=https://monarch-yyc.com/api/v1/telegram/webhook
-   ```
-
-6. Recreate the API to register the Telegram webhook:
+4. Recreate the API:
 
    ```powershell
    docker compose up -d --force-recreate api
    ```
 
-The bot receives a formatted summary followed by original media. JPEG, PNG, and
-WebP images up to Telegram's photo limit are grouped as albums; larger images and
-HEIC files are sent as documents without recompression. Pressing `✅ Принял`
-deletes the private server files and clears customer details from PostgreSQL.
-Unaccepted and abandoned requests are purged after seven days by default.
+The bot receives only a request number, vehicle category, broad area, service names,
+and a link to the protected admin inbox. Names, contact details, descriptions, photos,
+and videos are never sent to Telegram. Notification retries are persisted in PostgreSQL.
+
+## Protected admin inbox
+
+Production admin access uses a dedicated hostname protected by Cloudflare Access.
+The API validates the Access JWT as well as the permitted email allowlist; hiding the
+page at Nginx alone is not treated as authentication.
+
+Required private environment variables:
+
+```dotenv
+ADMIN_BASE_URL=https://admin.example.com
+ADMIN_ALLOWED_EMAILS=["owner@example.com"]
+CLOUDFLARE_ACCESS_TEAM_DOMAIN=example.cloudflareaccess.com
+CLOUDFLARE_ACCESS_AUD=replace-with-the-access-application-audience
+```
+
+The inbox has only three workflow states: `new`, `viewed`, and `accepted`. Opening a
+request marks it viewed. Accepting it confirms that the conversation has moved to the
+customer's chosen contact channel and schedules personal data and media for deletion
+after 30 days. Unhandled requests are retained for at most 90 days. Manual deletion is
+immediate and leaves only a non-identifying audit tombstone.
 
 ## Upload design
 
-The browser first creates a protected draft, uploads each original file in a
+The browser first creates a protected draft, uploads each file in a
 separate request, and finalizes the draft only after every upload succeeds. Limits:
 
-- 15 photos;
+- 10 photos;
 - 2 videos;
-- 50 MB per file;
-- 500 MB per request in total.
+- 12 MB per photo;
+- 50 MB per video;
+- 150 MB per request in total.
+
+Photos are normalized to JPEG, resized to a maximum 2560-pixel dimension, and saved
+without EXIF metadata before they become visible in the admin inbox.
 
 Separate uploads keep every HTTP request below Cloudflare's 100 MB Free-plan limit.
 
@@ -152,6 +167,6 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
 Copy-Item .env.example .env
-python -m app.init_db
+python -m app.migrate
 uvicorn app.main:app --reload
 ```

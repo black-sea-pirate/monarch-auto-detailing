@@ -6,16 +6,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.middleware import QuoteRequestBodyLimitMiddleware
-from app.routes import health, quotes, telegram
+from app.routes import admin, health, quotes
 from app.services.housekeeping import housekeeping_loop
 from app.services.storage import upload_root
-from app.services.telegram import configure_telegram_webhook
+from app.services.telegram import disable_telegram_webhook
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     upload_root().mkdir(parents=True, exist_ok=True)
-    await configure_telegram_webhook()
+    await disable_telegram_webhook()
     housekeeping_task = asyncio.create_task(housekeeping_loop())
     try:
         yield
@@ -44,4 +44,4 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(quotes.router)
-app.include_router(telegram.router)
+app.include_router(admin.router)
