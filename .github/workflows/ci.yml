@@ -15,6 +15,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  infra:
+    name: Infrastructure checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Validate deployment script
+        run: bash -n infra/deploy/monarch-deploy.sh
+
+      - name: Validate Nginx configuration
+        run: >-
+          docker run --rm
+          --add-host web:127.0.0.1
+          --add-host api:127.0.0.1
+          -v "$PWD/infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro"
+          nginx:1.29-alpine nginx -t
+
   api:
     name: API checks
     runs-on: ubuntu-latest
@@ -94,6 +112,7 @@ jobs:
     name: Promote tested commit to production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs:
+      - infra
       - api
       - web
     runs-on: ubuntu-latest

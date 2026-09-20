@@ -43,6 +43,18 @@ compose_up() {
     --env-file "${ENV_FILE}" \
     --profile tunnel \
     up -d --build --remove-orphans
+
+  sudo docker compose \
+    -f "${COMPOSE_FILE}" \
+    --env-file "${ENV_FILE}" \
+    --profile tunnel \
+    exec -T nginx nginx -t
+
+  sudo docker compose \
+    -f "${COMPOSE_FILE}" \
+    --env-file "${ENV_FILE}" \
+    --profile tunnel \
+    exec -T nginx nginx -s reload
 }
 
 wait_until_healthy() {
