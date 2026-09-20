@@ -5,8 +5,10 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
-from app.db import SessionFactory
+from app.config import settings
 from app.main import app
 from app.models import AdminAuditEvent, QuoteRequest, QuoteRequestDelivery
 
@@ -17,39 +19,54 @@ pytestmark = pytest.mark.skipif(
 
 
 async def _seed_quote(quote_id: uuid.UUID) -> None:
-    async with SessionFactory() as session:
-        session.add(
-            QuoteRequest(
-                id=quote_id,
-                name="CI Customer",
-                contact="ci@example.com",
-                contact_method="email",
-                vehicle="SUV",
-                community="Royal Oak",
-                concern="Integration test",
-                requested_services=["Maintenance Interior Clean"],
-                source="website",
-                status="new",
-                upload_token_hash="",
-                photo_count=0,
-                video_count=0,
-                upload_bytes=0,
+    engine = create_async_engine(settings.database_url, poolclass=NullPool)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with factory() as session:
+            session.add(
+                QuoteRequest(
+                    id=quote_id,
+                    name="CI Customer",
+                    contact="ci@example.com",
+                    contact_method="email",
+                    vehicle="SUV",
+                    community="Royal Oak",
+                    concern="Integration test",
+                    requested_services=["Maintenance Interior Clean"],
+                    source="website",
+                    status="new",
+                    upload_token_hash="",
+                    photo_count=0,
+                    video_count=0,
+                    upload_bytes=0,
+                )
             )
-        )
-        session.add(QuoteRequestDelivery(quote_id=quote_id, attempts=0))
-        await session.commit()
+            session.add(QuoteRequestDelivery(quote_id=quote_id, attempts=0))
+            await session.commit()
+    finally:
+        await engine.dispose()
 
 
 async def _load_quote(quote_id: uuid.UUID) -> QuoteRequest | None:
-    async with SessionFactory() as session:
-        return await session.get(QuoteRequest, quote_id)
+    engine = create_async_engine(settings.database_url, poolclass=NullPool)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with factory() as session:
+            return await session.get(QuoteRequest, quote_id)
+    finally:
+        await engine.dispose()
 
 
 async def _cleanup_quote(quote_id: uuid.UUID) -> None:
-    async with SessionFactory() as session:
-        await session.execute(delete(AdminAuditEvent).where(AdminAuditEvent.quote_id == quote_id))
-        await session.execute(delete(QuoteRequest).where(QuoteRequest.id == quote_id))
-        await session.commit()
+    engine = create_async_engine(settings.database_url, poolclass=NullPool)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with factory() as session:
+            await session.execute(delete(AdminAuditEvent).where(AdminAuditEvent.quote_id == quote_id))
+            await session.execute(delete(QuoteRequest).where(QuoteRequest.id == quote_id))
+            await session.commit()
+    finally:
+        await engine.dispose()
 
 
 def test_admin_inbox_with_postgresql() -> None:
