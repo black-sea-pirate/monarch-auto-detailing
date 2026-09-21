@@ -48,13 +48,15 @@ compose_up() {
     -f "${COMPOSE_FILE}" \
     --env-file "${ENV_FILE}" \
     --profile tunnel \
-    exec -T nginx nginx -t
+    run --rm --no-deps nginx nginx -t
 
+  # Git replaces the bind-mounted config inode during checkout, so a reload can
+  # keep reading the previous file. Recreate only Nginx after validation.
   sudo docker compose \
     -f "${COMPOSE_FILE}" \
     --env-file "${ENV_FILE}" \
     --profile tunnel \
-    exec -T nginx nginx -s reload
+    up -d --no-deps --force-recreate nginx
 }
 
 wait_until_healthy() {
