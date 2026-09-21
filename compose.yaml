@@ -27,6 +27,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://monarch:${POSTGRES_PASSWORD:-monarch-local-only}@db:5432/monarch
       CORS_ORIGINS: '["http://127.0.0.1:3000","http://localhost:3000"]'
       UPLOAD_DIR: /data/quote_uploads
+      SITE_MEDIA_DIR: /data/site_media
       QUOTE_DRAFT_RETENTION_HOURS: ${QUOTE_DRAFT_RETENTION_HOURS:-24}
       QUOTE_ACCEPTED_RETENTION_DAYS: ${QUOTE_ACCEPTED_RETENTION_DAYS:-30}
       QUOTE_UNHANDLED_RETENTION_DAYS: ${QUOTE_UNHANDLED_RETENTION_DAYS:-90}
@@ -40,6 +41,7 @@ services:
       ADMIN_DEV_TOKEN: ${ADMIN_DEV_TOKEN:-}
     volumes:
       - quote_uploads:/data/quote_uploads
+      - site_media:/data/site_media
     depends_on:
       db:
         condition: service_healthy
@@ -53,7 +55,7 @@ services:
     restart: unless-stopped
     environment:
       NUXT_PUBLIC_API_BASE: ""
-      NUXT_PUBLIC_SHOW_PORTFOLIO: ${NUXT_PUBLIC_SHOW_PORTFOLIO:-false}
+      NUXT_PUBLIC_ADMIN_DEV_TOKEN: ${NUXT_PUBLIC_ADMIN_DEV_TOKEN:-}
     depends_on:
       api:
         condition: service_healthy
@@ -101,6 +103,7 @@ services:
 volumes:
   postgres_data:
   quote_uploads:
+  site_media:
 
 networks:
   frontend:

@@ -11,10 +11,13 @@ defineProps<{
         <img src="/brand/monarch-symbol-gold.svg" alt="">
         <span><strong>Monarch</strong><small>Request inbox</small></span>
       </NuxtLink>
-      <NuxtLink class="admin-inbox-link" to="/admin">
-        Inbox
-        <span v-if="newCount">{{ newCount }}</span>
-      </NuxtLink>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <NuxtLink class="admin-inbox-link" to="/admin">
+          Inbox
+          <span v-if="newCount">{{ newCount }}</span>
+        </NuxtLink>
+        <NuxtLink class="admin-inbox-link" to="/admin/website">Website</NuxtLink>
+      </nav>
     </header>
     <main class="admin-main">
       <slot />

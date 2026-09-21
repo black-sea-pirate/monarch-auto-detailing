@@ -3,6 +3,7 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 MAX_MEDIA_UPLOAD_BODY = 52 * 1024 * 1024
+MAX_PORTFOLIO_UPLOAD_BODY = 13 * 1024 * 1024
 
 
 class QuoteRequestBodyLimitMiddleware:
@@ -27,6 +28,24 @@ class QuoteRequestBodyLimitMiddleware:
             if too_large:
                 response = JSONResponse(
                     {"detail": "Each uploaded file must be 50 MB or smaller."},
+                    status_code=413,
+                )
+                await response(scope, receive, send)
+                return
+        is_portfolio_upload = (
+            scope["type"] == "http"
+            and scope["method"] == "POST"
+            and scope.get("path", "").rstrip("/") == "/api/v1/admin/portfolio-images"
+        )
+        if is_portfolio_upload:
+            content_length = Headers(scope=scope).get("content-length")
+            try:
+                too_large = bool(content_length and int(content_length) > MAX_PORTFOLIO_UPLOAD_BODY)
+            except ValueError:
+                too_large = True
+            if too_large:
+                response = JSONResponse(
+                    {"detail": "Portfolio photos must be 12 MB or smaller."},
                     status_code=413,
                 )
                 await response(scope, receive, send)

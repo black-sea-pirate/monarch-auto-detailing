@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<{
   requestLabel?: string
   source?: 'website' | 'card'
 }>(), {
-  requestLabel: 'Request / 001',
+  requestLabel: 'Photo quote request',
   source: 'website',
 })
 
@@ -137,7 +137,7 @@ const vehicleOptions = [
 
 const needOptions = [
   { id: 'maintenance', label: 'Maintenance Interior Clean' },
-  { id: 'reset', label: 'Full Interior Reset' },
+  { id: 'reset', label: 'Deep Interior Detail' },
   { id: 'salt', label: 'Salt & Stain Treatment' },
   { id: 'pet-hair', label: 'Pet Hair Removal' },
   { id: 'leather', label: 'Leather Cleaning & Care' },
@@ -346,7 +346,7 @@ async function submitQuote() {
   <form class="quote-form glass-panel" @submit.prevent="submitQuote">
     <div class="form-topline">
       <span>{{ requestLabel }}</span>
-      <i>Secure intake</i>
+      <i>Private &amp; secure</i>
     </div>
 
     <fieldset class="contact-picker">
@@ -401,8 +401,8 @@ async function submitQuote() {
     </div>
 
     <label>
-      <span class="input-label">Community</span>
-      <input v-model.trim="form.community" type="text" autocomplete="address-level3" placeholder="Royal Oak, Tuscany, Arbour Lake…" required>
+      <span class="input-label">Service location / community</span>
+      <input v-model.trim="form.community" type="text" autocomplete="address-level3" placeholder="Calgary community or postal code" required>
     </label>
 
     <fieldset class="needs-fieldset">

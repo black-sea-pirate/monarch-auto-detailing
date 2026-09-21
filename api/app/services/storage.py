@@ -88,6 +88,13 @@ def upload_root() -> Path:
     return root.resolve()
 
 
+def site_media_root() -> Path:
+    root = settings.site_media_dir
+    if not root.is_absolute():
+        root = Path.cwd() / root
+    return root.resolve()
+
+
 def resolve_upload_path(stored_name: str) -> Path:
     root = upload_root()
     candidate = (root / stored_name).resolve()
@@ -95,6 +102,16 @@ def resolve_upload_path(stored_name: str) -> Path:
         candidate.relative_to(root)
     except ValueError as exc:
         raise UploadValidationError("Invalid stored upload path.") from exc
+    return candidate
+
+
+def resolve_site_media_path(stored_name: str) -> Path:
+    root = site_media_root()
+    candidate = (root / stored_name).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise UploadValidationError("Invalid stored portfolio path.") from exc
     return candidate
 
 
@@ -107,9 +124,7 @@ def _normalize_photo(source: Path, destination: Path) -> None:
                 (MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION),
                 Image.Resampling.LANCZOS,
             )
-            if image.mode in {"RGBA", "LA"} or (
-                image.mode == "P" and "transparency" in image.info
-            ):
+            if image.mode in {"RGBA", "LA"} or (image.mode == "P" and "transparency" in image.info):
                 rgba = image.convert("RGBA")
                 background = Image.new("RGB", rgba.size, "white")
                 background.paste(rgba, mask=rgba.getchannel("A"))
@@ -150,9 +165,7 @@ async def _store_one(
     destination = resolve_upload_path(relative_path.as_posix())
     destination.parent.mkdir(parents=True, exist_ok=True)
     write_target = (
-        destination.with_suffix(f"{destination.suffix}.upload")
-        if kind == "photo"
-        else destination
+        destination.with_suffix(f"{destination.suffix}.upload") if kind == "photo" else destination
     )
     size = 0
 
@@ -203,6 +216,63 @@ async def store_quote_upload(
         return await _store_one(quote_id, upload, kind, current_total)
     finally:
         await upload.close()
+
+
+async def _store_portfolio_image(upload: UploadFile) -> StoredUpload:
+    original_name = Path(upload.filename or "portfolio-photo").name[:255]
+    first_chunk = await upload.read(CHUNK_SIZE)
+    if not first_chunk:
+        raise UploadValidationError(f"{original_name} is empty.")
+    detect_upload_type(
+        "photo",
+        first_chunk[:32],
+        upload.content_type or "application/octet-stream",
+    )
+    stored_name = f"{uuid.uuid4().hex}.jpg"
+    destination = resolve_site_media_path(stored_name)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    write_target = destination.with_suffix(".jpg.upload")
+    size = 0
+
+    try:
+        async with await anyio.open_file(write_target, "wb") as output:
+            chunk = first_chunk
+            while chunk:
+                size += len(chunk)
+                if size > MAX_PHOTO_BYTES:
+                    limit_mb = MAX_PHOTO_BYTES // (1024 * 1024)
+                    raise UploadValidationError(
+                        f"Portfolio photos must be {limit_mb} MB or smaller."
+                    )
+                await output.write(chunk)
+                chunk = await upload.read(CHUNK_SIZE)
+        await anyio.to_thread.run_sync(_normalize_photo, write_target, destination)
+        write_target.unlink(missing_ok=True)
+        size = destination.stat().st_size
+    except Exception:
+        write_target.unlink(missing_ok=True)
+        destination.unlink(missing_ok=True)
+        raise
+    return StoredUpload(
+        kind="photo",
+        original_name=original_name,
+        stored_name=stored_name,
+        content_type="image/jpeg",
+        size_bytes=size,
+    )
+
+
+async def store_portfolio_image(upload: UploadFile) -> StoredUpload:
+    try:
+        return await _store_portfolio_image(upload)
+    finally:
+        await upload.close()
+
+
+async def purge_portfolio_image(stored_name: str) -> None:
+    path = resolve_site_media_path(stored_name)
+    if path.exists():
+        await anyio.to_thread.run_sync(path.unlink)
 
 
 async def purge_quote_files(quote_id: uuid.UUID) -> None:

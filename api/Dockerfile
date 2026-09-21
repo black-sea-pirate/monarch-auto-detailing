@@ -16,7 +16,7 @@ RUN python -m pip install --no-cache-dir .
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh \
-    && mkdir -p /data/quote_uploads \
+    && mkdir -p /data/quote_uploads /data/site_media \
     && chown -R monarch:monarch /app /data
 
 USER monarch

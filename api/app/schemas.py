@@ -100,3 +100,79 @@ class AdminQuoteDetailRead(AdminQuoteListItem):
     purge_after: datetime | None
     uploads: list[AdminQuoteUploadRead]
     delivery: AdminDeliveryRead
+
+
+class PriceSetting(BaseModel):
+    base_price_cents: int = Field(ge=100, le=1_000_000)
+    discount_price_cents: int | None = Field(default=None, ge=100, le=1_000_000)
+    discount_enabled: bool = False
+
+    @model_validator(mode="after")
+    def validate_discount(self) -> "PriceSetting":
+        if self.discount_enabled:
+            if self.discount_price_cents is None:
+                raise ValueError("Enter a discount price before enabling the discount.")
+            if self.discount_price_cents >= self.base_price_cents:
+                raise ValueError("The discount price must be lower than the regular price.")
+        return self
+
+
+class SiteSections(BaseModel):
+    pricing_enabled: bool = True
+    portfolio_enabled: bool = False
+    founding_offer_enabled: bool = False
+
+
+class SiteSettingsUpdate(BaseModel):
+    pricing: dict[str, PriceSetting]
+    sections: SiteSections
+    version: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def validate_price_keys(self) -> "SiteSettingsUpdate":
+        from app.site_defaults import PRICE_KEYS
+
+        if set(self.pricing) != set(PRICE_KEYS):
+            raise ValueError("Pricing settings are incomplete or contain an unknown service.")
+        return self
+
+
+class SiteSettingsRead(BaseModel):
+    pricing: dict[str, PriceSetting]
+    sections: SiteSections
+    version: int
+    updated_at: datetime | None = None
+    updated_by: str | None = None
+
+
+class PortfolioImageRead(BaseModel):
+    id: uuid.UUID
+    original_name: str
+    after_original_name: str | None
+    caption: str | None
+    sort_order: int
+    is_enabled: bool
+    size_bytes: int
+    after_size_bytes: int | None
+    url: str
+    after_url: str | None
+    created_at: datetime
+
+
+class PortfolioImageUpdate(BaseModel):
+    caption: str | None = Field(default=None, max_length=240)
+    is_enabled: bool
+
+
+class PublicPortfolioImageRead(BaseModel):
+    id: uuid.UUID
+    caption: str | None
+    url: str
+    after_url: str | None
+
+
+class PublicSiteRead(BaseModel):
+    pricing: dict[str, PriceSetting]
+    sections: SiteSections
+    portfolio: list[PublicPortfolioImageRead]
+    version: int

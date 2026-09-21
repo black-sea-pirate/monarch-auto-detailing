@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://monarch:monarch@127.0.0.1:5432/monarch"
     cors_origins: list[str] = ["http://127.0.0.1:3000", "http://localhost:3000"]
     upload_dir: Path = Path(".data/quote_uploads")
+    site_media_dir: Path = Path(".data/site_media")
     quote_draft_retention_hours: int = 24
     quote_accepted_retention_days: int = 30
     quote_unhandled_retention_days: int = 90

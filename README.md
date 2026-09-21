@@ -16,6 +16,11 @@ docker compose ps
 Open `http://127.0.0.1:3000`. Nginx is the only service published to the host;
 FastAPI and PostgreSQL remain on private Docker networks.
 
+For the local admin, set the same non-empty test value in `ADMIN_DEV_TOKEN` and
+`NUXT_PUBLIC_ADMIN_DEV_TOKEN` inside the ignored root `.env`, rebuild the stack,
+then open `http://admin.localhost:3000/admin`. These values must stay blank in
+production.
+
 Useful commands:
 
 ```powershell
@@ -70,6 +75,11 @@ request marks it viewed. Accepting it confirms that the conversation has moved t
 customer's chosen contact channel and schedules personal data and media for deletion
 after 30 days. Unhandled requests are retained for at most 90 days. Manual deletion is
 immediate and leaves only a non-identifying audit tombstone.
+
+The `Website` tab manages public prices and discounts, homepage section visibility,
+and portfolio photos. Portfolio media uses its own persistent volume and is not mixed
+with temporary customer quote uploads. Uploaded photos are normalized to JPEG, resized,
+and stripped of metadata.
 
 ## Upload design
 

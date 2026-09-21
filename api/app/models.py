@@ -86,8 +86,46 @@ class AdminAuditEvent(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     admin_email: Mapped[str] = mapped_column(String(320))
     action: Mapped[str] = mapped_column(String(50), index=True)
-    quote_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    quote_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
     details: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+
+class SiteSettings(Base):
+    __tablename__ = "site_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    pricing: Mapped[dict[str, object]] = mapped_column(JSONB)
+    sections: Mapped[dict[str, object]] = mapped_column(JSONB)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    updated_by: Mapped[str | None] = mapped_column(String(320), nullable=True)
+
+
+class PortfolioImage(Base):
+    __tablename__ = "portfolio_images"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    original_name: Mapped[str] = mapped_column(String(255))
+    stored_name: Mapped[str] = mapped_column(String(255), unique=True)
+    content_type: Mapped[str] = mapped_column(String(100), default="image/jpeg")
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    after_original_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    after_stored_name: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True
+    )
+    after_content_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    after_size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    caption: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    is_enabled: Mapped[bool] = mapped_column(default=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

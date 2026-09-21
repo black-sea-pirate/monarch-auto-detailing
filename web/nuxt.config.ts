@@ -2,11 +2,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-08-01',
   telemetry: false,
   css: ['~/assets/css/main.css', '~/assets/css/admin.css'],
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   runtimeConfig: {
     public: {
       apiBase: '',
-      showPortfolio: false,
+      adminDevToken: '',
     },
   },
   routeRules: {
@@ -15,12 +15,12 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'en-CA' },
-      title: 'Monarch Auto Interior Detailing | Royal Oak, Calgary NW',
+      title: 'Mobile Interior Car Detailing in Calgary | Monarch',
       meta: [
         {
           name: 'description',
           content:
-            'Focused interior detailing in Royal Oak and nearby NW Calgary communities. Request a clear photo-based quote.',
+            'Mobile interior car detailing across Calgary. View clear starting prices and request a photo-based quote.',
         },
         { name: 'theme-color', content: '#0b1713' },
       ],
