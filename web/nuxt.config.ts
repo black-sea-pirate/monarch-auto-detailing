@@ -15,12 +15,12 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'en-CA' },
-      title: 'Mobile Interior Car Detailing in Calgary | Monarch',
+      title: 'Mobile Interior Car Detailing Calgary | Monarch Auto Detailing',
       meta: [
         {
           name: 'description',
           content:
-            'Mobile interior car detailing across Calgary. View clear starting prices and request a photo-based quote.',
+            'Mobile interior car detailing across Calgary. Clear starting prices, material-safe service and photo-based quotes from Monarch Auto Detailing.',
         },
         { name: 'theme-color', content: '#0b1713' },
       ],

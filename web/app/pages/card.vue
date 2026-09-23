@@ -12,12 +12,13 @@ const priceIsDiscounted = (key: PriceKey) => (
 )
 
 useHead({
-  title: 'Request an Interior Detail | Monarch Calgary',
+  title: 'Request an Interior Detail | Monarch Auto Detailing',
   meta: [
     {
       name: 'description',
       content: 'Request a photo-based quote for mobile interior car detailing across Calgary.',
     },
+    { name: 'robots', content: 'noindex, follow' },
   ],
 })
 
@@ -108,7 +109,7 @@ useHead({
     </main>
 
     <footer class="card-page-footer section-wrap">
-      <span>© 2026 Monarch Auto Interior</span>
+      <span>© 2026 Monarch Auto Detailing</span>
       <NuxtLink to="/">Services · Method · FAQ</NuxtLink>
     </footer>
   </div>

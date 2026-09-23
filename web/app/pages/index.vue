@@ -1,6 +1,91 @@
 <script setup lang="ts">
-import { publicContactLinks, whatsappLink } from '~/data/contactLinks'
+import { publicContactLinks, socialLinks, whatsappLink } from '~/data/contactLinks'
 import { activePrice, formatCad, type PriceKey } from '~/data/siteContent'
+
+const siteUrl = 'https://monarch-yyc.com'
+const pageTitle = 'Mobile Interior Car Detailing Calgary | Monarch Auto Detailing'
+const pageDescription = 'Mobile interior car detailing across Calgary. Clear starting prices, material-safe service and photo-based quotes from Monarch Auto Detailing.'
+const socialImage = `${siteUrl}/brand/monarch-cover.png`
+
+useSeoMeta({
+  title: pageTitle,
+  description: pageDescription,
+  robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+  ogType: 'website',
+  ogUrl: `${siteUrl}/`,
+  ogLocale: 'en_CA',
+  ogSiteName: 'Monarch Auto Detailing',
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  ogImage: socialImage,
+  ogImageWidth: 1640,
+  ogImageHeight: 624,
+  ogImageAlt: 'Monarch Auto Detailing — mobile interior car detailing in Calgary',
+  twitterCard: 'summary_large_image',
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
+  twitterImage: socialImage,
+  twitterImageAlt: 'Monarch Auto Detailing — mobile interior car detailing in Calgary',
+})
+
+useHead({
+  link: [
+    { rel: 'canonical', href: `${siteUrl}/` },
+  ],
+  script: [
+    {
+      key: 'monarch-local-business',
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'WebSite',
+            '@id': `${siteUrl}/#website`,
+            url: `${siteUrl}/`,
+            name: 'Monarch Auto Detailing',
+            inLanguage: 'en-CA',
+            publisher: { '@id': `${siteUrl}/#business` },
+          },
+          {
+            '@type': 'AutomotiveBusiness',
+            '@id': `${siteUrl}/#business`,
+            name: 'Monarch Auto Detailing',
+            url: `${siteUrl}/`,
+            logo: `${siteUrl}/brand/monarch-symbol-gold.svg`,
+            image: socialImage,
+            description: pageDescription,
+            currenciesAccepted: 'CAD',
+            areaServed: {
+              '@type': 'City',
+              name: 'Calgary',
+            },
+            sameAs: socialLinks.map(link => link.href),
+            hasOfferCatalog: {
+              '@type': 'OfferCatalog',
+              name: 'Mobile interior detailing services',
+              itemListElement: [
+                'Maintenance Interior Clean',
+                'Deep Interior Detail',
+                'Salt & Stain Treatment',
+                'Pet Hair Removal',
+                'Leather Cleaning & Care',
+                'Upholstery Extraction',
+              ].map(name => ({
+                '@type': 'Offer',
+                itemOffered: {
+                  '@type': 'Service',
+                  name,
+                  areaServed: 'Calgary',
+                },
+              })),
+            },
+          },
+        ],
+      }),
+    },
+  ],
+})
 
 const { siteContent, portfolio } = useSiteContent()
 const showPricing = computed(() => siteContent.value.sections.pricing_enabled)
@@ -741,7 +826,7 @@ const faqs = [
           </a>
         </div>
       </div>
-      <span>© 2026 Monarch Auto Interior</span>
+      <span>© 2026 Monarch Auto Detailing</span>
     </footer>
   </div>
 </template>

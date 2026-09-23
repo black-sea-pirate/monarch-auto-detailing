@@ -1,4 +1,4 @@
-# Monarch Auto Interior Detailing
+# Monarch Auto Detailing
 
 Nuxt 4 / Vue 3 website with a FastAPI quote intake, PostgreSQL persistence,
 private temporary uploads, a protected admin inbox, minimal Telegram notifications,

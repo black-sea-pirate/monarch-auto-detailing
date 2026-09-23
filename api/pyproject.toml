@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "monarch-api"
 version = "0.1.0"
-description = "Monarch Auto Interior Detailing API"
+description = "Monarch Auto Detailing API"
 requires-python = ">=3.12"
 dependencies = [
   "alembic>=1.16,<2",
