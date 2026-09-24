@@ -811,6 +811,7 @@ const faqs = [
       </div>
       <div class="footer-center">
         <p>Mobile appointments across Calgary.</p>
+        <NuxtLink class="footer-privacy-link" to="/privacy">Privacy policy</NuxtLink>
         <div class="footer-social-links" aria-label="Monarch contact and social links">
           <a
             v-for="link in publicContactLinks"

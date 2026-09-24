@@ -110,7 +110,10 @@ useHead({
 
     <footer class="card-page-footer section-wrap">
       <span>© 2026 Monarch Auto Detailing</span>
-      <NuxtLink to="/">Services · Method · FAQ</NuxtLink>
+      <div class="card-footer-links">
+        <NuxtLink to="/privacy">Privacy policy</NuxtLink>
+        <NuxtLink to="/">Services · Method · FAQ</NuxtLink>
+      </div>
     </footer>
   </div>
 </template>

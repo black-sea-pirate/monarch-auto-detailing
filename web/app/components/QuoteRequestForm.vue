@@ -487,7 +487,7 @@ async function submitQuote() {
     </button>
 
     <p class="form-consent">
-      By sending, you consent to Monarch using these details and media to prepare your quote. Telegram receives only a request number and general service summary; contact details and media remain in our protected intake.
+      By sending, you consent to Monarch using these details and media to prepare your quote. Telegram receives a short summary, including your vehicle type and service area, but not your name, contact details or media. Read our <NuxtLink to="/privacy">privacy policy</NuxtLink>.
     </p>
 
     <p v-if="submitMessage" class="form-message" :class="`is-${submitState}`" role="status">
