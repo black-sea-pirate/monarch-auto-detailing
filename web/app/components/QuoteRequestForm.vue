@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { instagramLink, whatsappLink } from '~/data/contactLinks'
+
 type QuoteForm = {
   name: string
   contact: string
@@ -492,6 +494,13 @@ async function submitQuote() {
 
     <p v-if="submitMessage" class="form-message" :class="`is-${submitState}`" role="status">
       {{ submitMessage }}
+    </p>
+
+    <p class="form-followup-note">
+      <template v-if="submitState === 'error'">Having trouble sending your request? Message us directly on</template>
+      <template v-else>If you haven't heard from us within 24 hours after sending your request, message us directly on</template>
+      <a :href="whatsappLink.href" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+      or <a :href="instagramLink.href" target="_blank" rel="noopener noreferrer">Instagram</a>.
     </p>
   </form>
 </template>

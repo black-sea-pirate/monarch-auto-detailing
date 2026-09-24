@@ -2327,6 +2327,27 @@ h2 em {
   color: #d6a098;
 }
 
+.form-followup-note {
+  margin: 15px 0 0;
+  padding: 12px 14px;
+  border-left: 2px solid var(--gold);
+  color: #c0cbc1;
+  background: rgb(224 194 140 / 6%);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.form-followup-note a {
+  color: var(--gold-bright);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.form-followup-note a:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+}
+
 .card-page {
   position: relative;
   min-height: 100vh;
